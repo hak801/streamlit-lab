@@ -1,4 +1,4 @@
-# 📋 app.py · [실습 2-2] AI 용어 설명기 ② — 화면 + 요청 (설명 한 번에 요청 1번)
+# 📋 app.py · [실습 2-3] AI 용어 설명기 ③ — 오류를 한글 안내로 (설명 한 번에 요청 1번)
 import streamlit as st
 from google import genai
 from google.genai import types
@@ -17,6 +17,21 @@ def get_client():
             retry_options=types.HttpRetryOptions(http_status_codes=[500, 503]),   # 429 는 말없이 기다리지 않게
         ),
     )
+
+
+# ---------- ③ 오류를 한글 안내로 바꾸기 ----------
+def explain_error(error):
+    """오류 번호(status_code)를 보고 학생이 할 일을 한글로 알려 준다"""
+    code = getattr(error, "status_code", None)
+    if code == 400:
+        return "❌ 요청이 잘못됨 — 키를 다시 복사했는지 확인하세요."
+    if code == 402:
+        return "💳 결제가 연결된 프로젝트의 키임 — AI Studio 에서 새 프로젝트로 키를 다시 만드세요."
+    if code == 403:
+        return "❌ 권한 없음 — AI Studio 에서 키 상태를 확인하세요."
+    if code == 429:
+        return "⏳ 무료 한도를 넘음 — 1분 기다렸다 다시 눌러 보세요."
+    return f"❌ 오류 ({code}) : {error}"
 
 
 # ---------- 키가 있는지 먼저 확인 ----------
@@ -43,7 +58,7 @@ if st.button("설명 듣기", disabled=(word.strip() == "")):        # 용어를
                 input=word,
             )
         except Exception as error:
-            st.error(error)                       # 우선 오류를 그대로 보여 줌 (2-3 에서 한글로 바꿈)
+            st.error(explain_error(error))
         else:
             st.markdown(reply.output_text)                       # ** 굵게 같은 마크다운도 그대로 보여 줌
             st.caption(f"이번 요청 토큰 : {reply.usage.total_tokens}")
